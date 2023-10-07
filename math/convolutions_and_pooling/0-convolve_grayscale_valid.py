@@ -1,39 +1,31 @@
 #!/usr/bin/env python3
-'''convolution on grayscale images'''
-
+""" Performs convolution on grayscale images"""
 import numpy as np
 
 
 def convolve_grayscale_valid(images, kernel):
-    '''performs a valid convolution on grayscale images
-    Args:
-        images:array with shape (m, h, w) containing multiple grayscale images
-            m is the number of images
-            h is the height in pixels of the images
-            w is the width in pixels of the images
-        kernel: array with shape (kh, kw) containing the kernel
-            kh is the height of the kernel
-            kw is the width of the kernel
-        Return : a numpy.ndarray containing the convolved images
-    '''
-    m = images.shape[0]
-    h = images.shape[1]
-    w = images.shape[2]
-    kh = kernel.shape[0]
-    kw = kernel.shape[1]
-    n_h = h - kh + 1
-    n_w = w - kw + 1
-    # size output convolved
-    convolved = np.zeros([m, n_h, n_w])
-    # Loop over every pixel of the output
-    for x in range(n_h):
-        for y in range(n_w):
-            # slice every image according to kernel size
-            image = images[:, x:x+kh, y:y+kw]
-            # apply convolution:
-            # element-wise multiplication of the kernel and the image
-            # and sum it
-            convolved[:, x, y] = np.multiply(image, kernel).sum(axis=(1, 2))
-    # Making sure output shape is correct
-    # assert(convolved.shape == (m, n_h, n_w))
-    return convolved
+    """Function to convolve the image"""
+    if images.ndim == 4:
+        m, h, w, _ = images.shape
+        # Convert RGB to grayscale
+        images = (0.2989 * images[:, :, :, 0] +
+                  0.5870 * images[:, :, :, 1] +
+                  0.1140 * images[:, :, :, 2])
+    else:
+        m, h, w = images.shape
+
+    kh, kw = kernel.shape
+
+    # Calculate new dimensions after VALID convolution
+    new_h = h - kh + 1
+    new_w = w - kw + 1
+
+    # Initialize the array for convolved images
+    output = np.zeros((m, new_h, new_w))
+
+    # Perform the convolution
+    for i in range(new_h):
+        for j in range(new_w):
+            sub_matrix = images[:, i: i + kh, j: j + kw] * kernel
+            output[:, i, j] = np.sum(sub_matrix, axis=(1, 2))
+    return output
