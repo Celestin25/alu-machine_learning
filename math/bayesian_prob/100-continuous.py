@@ -1,50 +1,42 @@
 #!/usr/bin/env python3
 """
-Defines a function that calculates the posterior probability that the
-various hypothetical probabilities of developing severe side effects
-falls within a specific range given the data
+This script defines a function to calculate the posterior probability that
+the various hypothetical probabilities of developing severe side effects fall
+within a specific range given the data.
 """
-
 
 from scipy import special
 
-
-def posterior(x, n, p1, p2):
+def calculate_posterior_within_range(severe_cases, total_patients, lower_bound, upper_bound):
     """
-    Calculates the posterior probability that the
-    various hypothetical probabilities of developing severe side effects
-    falls within a specific range given the data
+    Calculates the posterior probability that the hypothetical probabilities fall within a specific range given the data.
 
-    parameters:
-        x [int]: total number of patients that develop severe side effects
-        n [int]: total number of patients observed
-        p1 [float]: the lower bound on the range
-        p2 [float]: the upper bound on the range
+    Parameters:
+        severe_cases (int): Number of patients with severe side effects.
+        total_patients (int): Total number of patients observed.
+        lower_bound (float): Lower bound of the probability range.
+        upper_bound (float): Upper bound of the probability range.
 
-    prior beliefs of p follow a uniform distribution
-
-    returns:
-        the posterior probability that p is within range [p1, p2] given x and n
+    Returns:
+        float: Posterior probability that probabilities fall within the range [lower_bound, upper_bound].
     """
-    if type(n) is not int or n <= 0:
-        raise ValueError("n must be a positive integer")
-    if type(x) is not int or x < 0:
-        raise ValueError(
-            "x must be an integer that is greater than or equal to 0")
-    if x > n:
-        raise ValueError("x cannot be greater than n")
-    if type(p1) is not float or p1 < 0 or p1 > 1:
-        raise ValueError("p1 must be a float in the range [0, 1]")
-    if type(p2) is not float or p2 < 0 or p2 > 1:
-        raise ValueError("p2 must be a float in the range [0, 1]")
-    if p2 <= p1:
-        raise ValueError("p2 must be greater than p1")
-    # use p and (1 - p) or in our case x and (n - x) for the data
-    # add uniformly distributed priors with +1 in parameters
-    # cumulative distribution function for beta distribution for 0 to p1
-    beta_dist1 = special.btdtr(x + 1, n - x + 1, p1)
-    # cumulative distribution function for beta distribution for 0 to p2
-    beta_dist2 = special.btdtr(x + 1, n - x + 1, p2)
-    # subtract to get the difference between p2 and p1
-    posterior = beta_dist2 - beta_dist1
-    return posterior
+    if not isinstance(total_patients, int) or total_patients <= 0:
+        raise ValueError("Total patients must be a positive integer.")
+    if not isinstance(severe_cases, int) or severe_cases < 0:
+        raise ValueError("Number of severe cases must be a non-negative integer.")
+    if severe_cases > total_patients:
+        raise ValueError("Number of severe cases cannot exceed total patients.")
+    if not (0 <= lower_bound <= 1) or not (0 <= upper_bound <= 1):
+        raise ValueError("Bounds must be within the range [0, 1].")
+    if upper_bound <= lower_bound:
+        raise ValueError("Upper bound must be greater than lower bound.")
+
+    # Calculate cumulative distribution function for beta distribution from 0 to upper_bound
+    cdf_upper_bound = special.btdtr(severe_cases + 1, total_patients - severe_cases + 1, upper_bound)
+    # Calculate cumulative distribution function for beta distribution from 0 to lower_bound
+    cdf_lower_bound = special.btdtr(severe_cases + 1, total_patients - severe_cases + 1, lower_bound)
+
+    # Calculate the posterior probability that probabilities fall within the specified range
+    posterior_probability = cdf_upper_bound - cdf_lower_bound
+
+    return posterior_probability
