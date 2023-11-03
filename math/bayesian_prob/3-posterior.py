@@ -1,56 +1,50 @@
 #!/usr/bin/env python3
 """
-Defines a function that calculates the posterior probability for the
-various hypothetical probabilities of developing severe side effects
-given the data
+This script defines a function to calculate the posterior probability for
+various hypothetical probabilities of developing severe side effects given the data.
 """
-
 
 import numpy as np
 
-
-def posterior(x, n, P, Pr):
+def calculate_posterior_probability(severe_cases, total_patients, probabilities, priors):
     """
-    Calculates the posterior probability for the
-    various hypothetical probabilities of developing severe side effects
-    given the data
+    Calculates the posterior probability for various hypothetical probabilities of developing severe side effects.
 
-    parameters:
-        x [int]: total number of patients that develop severe side effects
-        n [int]: total number of patients observed
-        P [1D numpy.ndarray]: containing the various hypothetical probabilities
-            of developing severe side effects
-        Pr [1D numpy.ndarray]: containing the prior beliefs of P
+    Parameters:
+        severe_cases (int): Number of patients with severe side effects.
+        total_patients (int): Total number of patients observed.
+        probabilities (numpy.ndarray): Array of hypothetical probabilities.
+        priors (numpy.ndarray): Array of prior beliefs for probabilities.
 
-    returns:
-        the posterior probability of each probability in P, given x and n
+    Returns:
+        numpy.ndarray: Posterior probability of each probability in probabilities, given severe_cases and total_patients.
     """
-    if type(n) is not int or n <= 0:
-        raise ValueError("n must be a positive integer")
-    if type(x) is not int or x < 0:
-        raise ValueError(
-            "x must be an integer that is greater than or equal to 0")
-    if x > n:
-        raise ValueError("x cannot be greater than n")
-    if type(P) is not np.ndarray or len(P.shape) != 1:
-        raise TypeError("P must be a 1D numpy.ndarray")
-    if type(Pr) is not np.ndarray or Pr.shape != P.shape:
-        raise TypeError("Pr must be a numpy.ndarray with the same shape as P")
-    for value in range(P.shape[0]):
-        if P[value] > 1 or P[value] < 0:
-            raise ValueError("All values in P must be in the range [0, 1]")
-        if Pr[value] > 1 or Pr[value] < 0:
-            raise ValueError("All values in Pr must be in the range [0, 1]")
-    if np.isclose([np.sum(Pr)], [1]) == [False]:
-        raise ValueError("Pr must sum to 1")
-    # likelihood calculated as binomial distribution
-    factorial = np.math.factorial
-    fact_coefficient = factorial(n) / (factorial(n - x) * factorial(x))
-    likelihood = fact_coefficient * (P ** x) * ((1 - P) ** (n - x))
-    # intersection is the likelihood times priors
-    intersection = likelihood * Pr
-    # marginal probability is the sum over all probabilities of events
-    marginal = np.sum(intersection)
-    # posterior probability is the intersection divided by marginal probability
-    posterior = intersection / marginal
-    return posterior
+    if not isinstance(total_patients, int) or total_patients <= 0:
+        raise ValueError("Total patients must be a positive integer.")
+    if not isinstance(severe_cases, int) or severe_cases < 0:
+        raise ValueError("Number of severe cases must be a non-negative integer.")
+    if severe_cases > total_patients:
+        raise ValueError("Number of severe cases cannot exceed total patients.")
+    if not isinstance(probabilities, np.ndarray) or len(probabilities.shape) != 1:
+        raise TypeError("Probabilities must be a 1D numpy array.")
+    if not isinstance(priors, np.ndarray) or priors.shape != probabilities.shape:
+        raise TypeError("Priors must be a numpy array with the same shape as probabilities.")
+    if not all(0 <= p <= 1 for p in probabilities) or not all(0 <= pr <= 1 for pr in priors):
+        raise ValueError("Probabilities and priors must be within the range [0, 1].")
+    if not np.isclose([np.sum(priors)], [1]):
+        raise ValueError("Priors must sum to 1.")
+
+    # Calculate likelihood using the binomial distribution formula
+    binomial_coefficient = np.math.comb(total_patients, severe_cases)
+    likelihood = binomial_coefficient * (probabilities ** severe_cases) * ((1 - probabilities) ** (total_patients - severe_cases))
+
+    # Calculate intersection of likelihood and priors
+    intersection = likelihood * priors
+
+    # Calculate marginal probability by summing over all probabilities of events
+    marginal_probability = np.sum(intersection)
+
+    # Calculate posterior probability by dividing intersection by marginal probability
+    posterior_probability = intersection / marginal_probability
+
+    return posterior_probability
