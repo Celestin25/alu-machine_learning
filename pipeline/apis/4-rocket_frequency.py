@@ -1,37 +1,32 @@
 #!/usr/bin/env python3
 """
-Uses the (unofficial) SpaceX API to print the number of launches per rocket.
+Script to display the number of launches per rocket using the SpaceX API.
 """
 
 import requests
 
-def fetch_data(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"HTTP Request failed: {e}")
-        exit(1)
+def get_launch_count_by_rocket():
+    response = requests.get('https://api.spacexdata.com/v4/launches')
+    if response.status_code != 200:
+        return None
 
-if __name__ == "__main__":
-    # Fetch list of all launches
-    launches_url = "https://api.spacexdata.com/v4/launches"
-    launches = fetch_data(launches_url)
+    launches = response.json()
+    rocket_ids = [launch['rocket'] for launch in launches]
 
-    # Fetch list of all rockets for name mapping
-    rockets_url = "https://api.spacexdata.com/v4/rockets"
-    rockets = fetch_data(rockets_url)
-    rocket_name_map = {rocket["id"]: rocket["name"] for rocket in rockets}
+    rocket_count = {}
+    for rocket_id in set(rocket_ids):
+        count = rocket_ids.count(rocket_id)
+        rocket_info = requests.get(f'https://api.spacexdata.com/v4/rockets/{rocket_id}').json()
+        rocket_name = rocket_info.get('name', 'Unknown')
+        rocket_count[rocket_name] = count
 
-    # Count launches per rocket
-    launch_count = {}
-    for launch in launches:
-        rocket_id = launch.get("rocket")
-        rocket_name = rocket_name_map.get(rocket_id, "Unknown Rocket")
-        launch_count[rocket_name] = launch_count.get(rocket_name, 0) + 1
+    return rocket_count
 
-    # Sort and print
-    sorted_launches = sorted(launch_count.items(), key=lambda x: (-x[1], x[0]))
-    for rocket, count in sorted_launches:
-        print(f"{rocket}: {count}")
+def main():
+    rocket_count = get_launch_count_by_rocket()
+    if rocket_count:
+        for rocket, count in sorted(rocket_count.items(), key=lambda item: (-item[1], item[0])):
+            print(f"{rocket}: {count}")
+
+if __name__ == '__main__':
+    main()
