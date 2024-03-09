@@ -1,40 +1,37 @@
 #!/usr/bin/env python3
-"""
-Uses the (unofficial) SpaceX API to print the upcoming launch as:
-<launch name> (<date>) <rocket name> - <launchpad name> (<launchpad locality>)
-
-The “upcoming launch” is the one which is the soonest from now, in UTC
-and if 2 launches have the same date, it's the first one in the API result.
-"""
-
-
 import requests
 
+def get_spacex_info(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching SpaceX data: {e}")
+        return None
 
 if __name__ == "__main__":
-    url = "https://api.spacexdata.com/v4/launches/upcoming"
-    results = requests.get(url).json()
-    dateCheck = float('inf')
-    launchName = None
-    rocket = None
-    launchPad = None
-    location = None
-    for launch in results:
-        launchDate = launch.get('date_unix')
-        if launchDate < dateCheck:
-            dateCheck = launchDate
-            date = launch.get('date_local')
-            launchName = launch.get('name')
-            rocket = launch.get('rocket')
-            launchPad = launch.get('launchpad')
-    if rocket:
-        rocket = requests.get('https://api.spacexdata.com/v4/rockets/{}'.
-                              format(rocket)).json().get('name')
-    if launchPad:
-        launchpad = requests.get('https://api.spacexdata.com/v4/launchpads/{}'.
-                                 format(launchPad)).json()
-        launchPad = launchpad.get('name')
-        location = launchpad.get('locality')
+    upcoming_launches_url = "https://api.spacexdata.com/v4/launches/upcoming"
+    launches = get_spacex_info(upcoming_launches_url)
+    
+    if not launches:
+        exit()
 
-    print("{} ({}) {} - {} ({})".format(
-        launchName, date, rocket, launchPad, location))
+    soonest_launch = min(launches, key=lambda x: x.get('date_unix', float('inf')))
+
+    launch_name = soonest_launch.get('name')
+    launch_date = soonest_launch.get('date_local')
+    rocket_id = soonest_launch.get('rocket')
+    launchpad_id = soonest_launch.get('launchpad')
+
+    rocket_info = get_spacex_info(f"https://api.spacexdata.com/v4/rockets/{rocket_id}")
+    launchpad_info = get_spacex_info(f"https://api.spacexdata.com/v4/launchpads/{launchpad_id}")
+
+    if rocket_info and launchpad_info:
+        rocket_name = rocket_info.get('name')
+        launchpad_name = launchpad_info.get('name')
+        launchpad_locality = launchpad_info.get('locality')
+
+        print(f"{launch_name} ({launch_date}) {rocket_name} - {launchpad_name} ({launchpad_locality})")
+    else:
+        print("Failed to retrieve launch details.")
