@@ -1,40 +1,32 @@
 #!/usr/bin/env python3
-
 """
-This module contains a function that
-uses Github API to print location of
-specific users"""
+Script to print the location of a GitHub user.
+"""
 
 import requests
 import sys
+from datetime import datetime
 
-# get the url from string passed on the terminal
-
-# If the user doesn’t exist, print Not found
-# If the status code is 403, print Reset in X min
-# where X is the number of minutes from now and the value of X-Ratelimit-Reset
-# Your code should not be executed when the file is imported
-# (you should use if __name__ == '__main__':)
-
-
-def print_location():
-    """print location of user"""
-    url = sys.argv[1]
+def get_user_location(url):
     response = requests.get(url)
-    data = response.json()
 
-    if response.status_code == 200:
-        if 'location' in data and data['location']:
-            print(data['location'])
-        else:
-            print("Not found")
+    if response.status_code == 404:
+        return "Not found"
     elif response.status_code == 403:
-        print("Reset in {} min".format(
-            (int(response.headers['X-Ratelimit-Reset']) -
-             int(response.headers['X-Ratelimit-Reset'])) / 60))
+        reset_timestamp = int(response.headers.get('X-Ratelimit-Reset', 0))
+        reset_time = datetime.utcfromtimestamp(reset_timestamp)
+        remaining_time = (reset_time - datetime.utcnow()).total_seconds() // 60
+        return f"Reset in {int(remaining_time)} min"
+    elif response.status_code == 200:
+        user_data = response.json()
+        return user_data.get('location', 'Location not provided')
     else:
-        print("Not found")
+        return "Error occurred"
 
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: ./2-user_location.py <GitHub user profile API URL>")
+        sys.exit(1)
 
-if __name__ == "__main__":
-    print_location()
+    user_api_url = sys.argv[1]
+    print(get_user_location(user_api_url))
