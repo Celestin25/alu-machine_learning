@@ -1,35 +1,33 @@
 #!/usr/bin/env python3
 """
-Script to display the number of launches per rocket using the SpaceX API.
+Displays the number of launches per rocket
 """
-
 import requests
 
-def fetch_data(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Failed to fetch data: HTTP {response.status_code}")
-        exit(1)
-
-def get_rocket_name(rocket_id, rockets):
-    return rockets.get(rocket_id, {}).get('name', 'Unknown Rocket')
 
 if __name__ == '__main__':
-    launches = fetch_data('https://api.spacexdata.com/v4/launches')
-    rockets_info = fetch_data('https://api.spacexdata.com/v4/rockets')
 
-    # Create a mapping of rocket IDs to rocket names
-    rockets = {rocket['id']: rocket for rocket in rockets_info}
+    rockets = {}
 
-    # Count launches per rocket ID
-    launch_counts = {}
+    url = 'https://api.spacexdata.com/v4/launches'
+    r = requests.get(url)
+    launches = r.json()
+
     for launch in launches:
         rocket_id = launch['rocket']
-        rocket_name = get_rocket_name(rocket_id, rockets)
-        launch_counts[rocket_name] = launch_counts.get(rocket_name, 0) + 1
+        url_r = "https://api.spacexdata.com/v4/rockets/{}".\
+            format(rocket_id)
+        req_r = requests.get(url_r)
+        json_r = req_r.json()
+        rocket_name = json_r['name']
 
-    # Sort and print the launch counts
-    for rocket_name, count in sorted(launch_counts.items(), key=lambda item: (-item[1], item[0])):
-        print(f"{rocket_name}: {count}")
+        if rocket_name in rockets.keys():
+            rockets[rocket_name] += 1
+        else:
+            rockets[rocket_name] = 1
+
+    sort = sorted(rockets.items(), key=lambda x: x[0])
+    sort = sorted(sort, key=lambda x: x[1], reverse=True)
+
+    for i in sort:
+        print("{}: {}".format(i[0], i[1]))
