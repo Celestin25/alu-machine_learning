@@ -1,37 +1,33 @@
 #!/usr/bin/env python3
+"""
+Defines function that calculates the Shannon entropy and P affinities
+relative to a data point
+"""
 
-"""
-This module contain a function that calculates
-the Shannon entropy and P affinities to a datapoint
-"""
 
 import numpy as np
 
 
 def HP(Di, beta):
     """
-    Function that calculates the Shannon entropy and
-    P affinities to a datapoint
+    Calculates the Shannon entropy and P affinities relative to a data point
 
-    Di: numpy.ndarray: (n -1,)
-        - contains the Euclidean distances from all data points
-        to the ith data point
-        n - no. of data points
-    beta: numpy.ndarray: (1)
-        - contains the beta values for Gaussian distribution
-    Returns:
-    Hi: float: the Shannon entropy of the points
-    Pi: numpy.ndarray: (n -1,) the P affinities of the points
+    parameters:
+        Di [numpy.ndarray of shape (n - 1,)]:
+            containing the pairwise distances between
+                a data point and all other points
+            n: the number of data points
+        beta [numpy.ndarray of shape (1,)]:
+            containing the beta value for the Gaussian distribution
+
+    returns:
+        (Hi, Pi)
+        Hi: the Shannon entropy of the points
+        Pi [numpy.ndarray of shape (n - 1,)]:
+            contatining the P affinities of the points
     """
-    # Compute the numerator of the P affinities
-    num = np.exp(-Di * beta)
-    num[Di == 0] = 0
-
-    # Compute the denominator of the P affinities
-    den = np.sum(num)
-    Pi = num / den
-
-    # Compute the Shannon entropy
+    prob = np.exp(-Di * beta)
+    total = np.sum(prob)
+    Pi = prob / total
     Hi = -np.sum(Pi * np.log2(Pi))
-
-    return Hi, Pi
+    return (Hi, Pi)
